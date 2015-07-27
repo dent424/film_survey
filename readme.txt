@@ -8,6 +8,7 @@ flat_output - an intermediate csv file used to clean data
 movie_data - raw JSON output from OMDBAPI
 project_report.html - Final report for the project
 project_report.Rmd - Rmd file used to create project_report.html based on code from critics_analysis.R
+Sources - A list of sources used for this project
 replace.txt - an intermediate file used for cleaning data
 test - Backup.csv - a backup of test
 test - an intermediate file used for cleaning data
