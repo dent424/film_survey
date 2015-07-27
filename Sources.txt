@@ -1,0 +1,45 @@
+Getting legend on line chart with GGPLOT2
+http://stackoverflow.com/questions/10349206/add-legend-to-ggplot2-line-plot
+Rounding
+https://stat.ethz.ch/R-manual/R-devel/library/base/html/Round.html
+Saving GGally Scatterplot Matrices
+https://github.com/hadley/ggplot2/issues/650
+Merging Datasets
+http://www.statmethods.net/management/merging.html
+Add Header to CSV file with Python
+http://stackoverflow.com/questions/20347766/pythonically-add-header-to-a-csv-file
+Dealing with Unicode Errors
+http://stackoverflow.com/questions/4650639/python-convert-unicode-to-ascii-without-errors-for-csv-file
+Writing to CSV files in Python
+http://stackoverflow.com/questions/14693646/writing-to-csv-file-python
+Help with Beautiful Soup
+http://www.pythonforbeginners.com/python-on-the-web/beautifulsoup-4-python/
+Using Requests with Python
+http://www.pythonforbeginners.com/requests/using-requests-in-python
+Pickling
+https://docs.python.org/2/library/pickle.html
+http://stackoverflow.com/questions/17225287/python-2-7-write-and-read-a-list-from-file
+Removing a substring from the end of a string
+http://stackoverflow.com/questions/1038824/how-do-i-remove-a-substring-from-the-end-of-a-string-in-python
+Turn a string into a list
+http://stackoverflow.com/questions/743806/split-string-into-a-list-in-python
+Gridextra
+http://www.r-bloggers.com/extra-extra-get-your-gridextra/
+The ave function
+http://www.r-bloggers.com/ave-and-the-function-in-r/
+Using the Transform function
+http://www.computerworld.com/article/2486425/business-intelligence/business-intelligence-4-data-wrangling-tasks-in-r-for-advanced-beginners.html?page=2
+Convert Dataframe column to Vector
+http://stackoverflow.com/questions/7070173/r-friendly-way-to-convert-r-data-frame-column-to-a-vector
+Remove dataset rows based on the contents of a vector
+http://stackoverflow.com/questions/11004203/remove-the-rows-of-data-frame-whose-cells-match-a-given-vector
+Adding background colors in ggplot based on a variable
+http://stackoverflow.com/questions/31381053/changing-the-background-color-of-a-ggplot-chart-with-a-factor-variable/31388946#31388946 (I submitted this question)
+http://stackoverflow.com/questions/9968975/using-ggplot2-in-r-how-do-i-make-the-background-of-a-graph-different-colours-in
+
+
+
+
+
+
+
