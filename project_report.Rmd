@@ -1,6 +1,6 @@
 #An Analysis of Cinema's Great Directors
 ##Alexander Moore
-##July 20, 2015
+##July 27, 2015
 
 #Abstract
 I analyze voting patterns of cinema experts in the Sight and Sound "The Greatest Films Poll." 
@@ -78,6 +78,8 @@ critic_data$Germany.Aggregate <- critic_data$Germany + critic_data$West.Germany
 
 The first thing I wanted to see was the distribution of votes across decades. I was curious to see what decades might be considered the greatest in cinema.
 
+
+
 I started off by making a histogram with a bin width of 10 years so that each bar represents a decade
 ```{r}
 ggplot(aes(x=selectionYear), data=critic_data) +
@@ -94,7 +96,13 @@ In order to answer this kind of question, I had to do some data manipulation inc
 ```{r}
 #creates a decade variable for future analysis
 critic_data$decade <- floor(critic_data$selectionYear/10)*10
+table(critic_data$decade)
 ```
+In the table above we can see a numerical version of the histogram that I created earlier. We can see that the 1960s have significantly more votes than the nearest competitor.
+
+I also decided to make a boxplot of the data to get a better look.
+
+
 
 Due to the presence of countries with a very small number of votes, I set an arbitrary threshold and filtered out the countries that had fewer than that number of votes
 
@@ -148,6 +156,9 @@ ggplot(aes(y=votes,x=decade),data=votesbyDecade.long)+
   ggtitle("Votes by Decade and Country")
 ```
 
+```{r message=FALSE, warning=FALSE}
+with(votesbyDecade.long, tapply(votes, list(country, decade), sum))
+```
 We can see that even in this top group, the number of movies is dominated by a few countries. These countries include USA, Japan, Italy, and France. In addition we can see that many countries encounter a distinct peak. Notable peaks include France and Italy in the 1960, Japan in the 1950s, and the USA in the 1950s and the 1970s. Each of these peaks seems to correspond with a few auteurs that worked in those decades. In France in the 1960s we have the French New Wave directors including luminaries such as Jean-Luc Godard and Francois Truffaut. In Italy in the 1960s, we have Frederico Fellini and Michaelangelo Antonioni. In the 1950s in the USA we have directors like Alfred Hitchcock, Billy Wilder, and Elia Kazan, and John Ford. The 1970s in the US we have Francis Ford Coppola and Martin Scorsese. Japan in the 1950s featured major works by Akira Kurosawa and Yasujiro Ozu.
 
 Also, please note that in this chart, I have also created the country "Germany.Aggregate" which combines Germany and West Germany.
@@ -180,6 +191,8 @@ While looking at the top directors, I became interested in the distribution of v
 
 I started off by plotting a chart of the number of votes from each country.
 
+
+
 ```{r  message=FALSE, warning=FALSE}
 ggplot(aes(x=country), data=critic_data) +
   geom_bar() +
@@ -209,7 +222,19 @@ ggplot(aes(x=reorder(country, -Totals),y=Totals), data=votersbyCountry) +
   scale_x_discrete(breaks=NULL)
 ```
 
-From this chart, it is very clear that the votes are dominated by a very small number of countries. I wanted to get a closer look at what countries had the most votes so I replotted with only countries representing the top quintile of voting countries.
+From this chart, it is very clear that the votes are dominated by a very small number of countries.
+
+```{r  message=FALSE, warning=FALSE}
+#cuts votes variable into a factor
+cuts <- cut(votersbyCountry$Totals, breaks = c(0,10,100,1000,10000))
+table(cuts)
+```
+
+This table also makes it clear that there are many countries with nearly 0 votes and close a few countries with hundreds of votes. 
+
+
+
+I wanted to get a closer look at what countries had the most votes so I replotted with only countries representing the top quintile of voting countries.
 
 ```{r  message=FALSE, warning=FALSE}
 top_vote_countries <- subset(votersbyCountry, Totals >= quantile(Totals,0.8))
@@ -476,6 +501,16 @@ top.votes.by.director.country <- top.votes.by.director.country[keep,]
 ```
 
 I then repeated the previous plot with the smaller number of countries.
+
+I was hoping to get them all onto a single line chart, but the results were not good.
+
+```{r  message=FALSE, warning=FALSE}
+ggplot(aes(country, director.rank, group = selectionDirector, color=selectionDirector), data=top.votes.by.director.country)+
+  geom_line()+
+  coord_cartesian(ylim = c(0,40))
+```
+
+Instead I tried a faceted graph.
 
 ```{r  message=FALSE, warning=FALSE}
 ggplot(aes(x=reorder(country, director.rank), y=director.rank, group=1,color=country), data=top.votes.by.director.country) +
