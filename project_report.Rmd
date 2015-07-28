@@ -84,7 +84,7 @@ The first thing I wanted to see was the distribution of votes across decades. I 
 
 
 I started off by making a histogram with a bin width of 10 years so that each bar represents a decade
-```{r}
+```{r decade_histogram, echo=FALSE, cache=TRUE, cache.path = 'cache/', fig.path='figure/'}
 ggplot(aes(x=selectionYear), 
        data=critic_data) +
   geom_histogram(binwidth=10, 
@@ -156,7 +156,7 @@ votesbyDecade.long <- melt(votesbyDecade,
 ```
 I then made a faceted graph of these countries.
 
-```{r message=FALSE, warning=FALSE}
+```{r decade_histogram_country, echo=FALSE, cache=TRUE, cache.path = 'cache/', fig.path='figure/'}
 ggplot(aes(y=votes,
            x=decade),
        data=votesbyDecade.long)+
@@ -192,7 +192,7 @@ country_percentages$percentages <-
 ```
 
 I then made another faceted graph which exchanged absolute values for percentages.
-```{r  message=FALSE, warning=FALSE}
+```{r message=FALSE, warning=FALSE, decade_histogram_country_pct, echo=FALSE, cache=TRUE, cache.path = 'cache/', fig.path='figure/' }
 ggplot(aes(y=percentages,
            x=decade),
        data=country_percentages)+
@@ -210,7 +210,7 @@ I started off by plotting a chart of the number of votes from each country.
 
 
 
-```{r  message=FALSE, warning=FALSE}
+```{r votes_per_country, echo=FALSE, cache=TRUE, cache.path = 'cache/', fig.path='figure/', message=FALSE, warning=FALSE}
 ggplot(aes(x=country), 
        data=critic_data) +
   geom_bar() +
@@ -230,7 +230,7 @@ votersbyCountry <- summarise(voter_groups,
 
 I then plotted the number of votes from each country. Since each voter has 10 votes, it can be assumed that the number of votes is simply 10 times the number of voters.
 
-```{r  message=FALSE, warning=FALSE}
+```{r votes_per_country_ordered, echo=FALSE, cache=TRUE, cache.path = 'cache/', fig.path='figure/', message=FALSE, warning=FALSE}
 ggplot(aes(x=reorder(country, -Totals),
            y=Totals), 
        data=votersbyCountry) +
@@ -257,7 +257,7 @@ This table also makes it clear that there are many countries with nearly 0 votes
 
 I wanted to get a closer look at what countries had the most votes so I replotted with only countries representing the top quintile of voting countries.
 
-```{r  message=FALSE, warning=FALSE}
+```{r most_votes, echo=FALSE, cache=TRUE, cache.path = 'cache/', fig.path='figure/', message=FALSE, warning=FALSE}
 top_vote_countries <- 
   subset(votersbyCountry, 
          Totals >= quantile(Totals,0.8))
@@ -286,7 +286,7 @@ votesbyDirector <- summarise(director_groups,
 The first thing I wanted to see was the overall distribution of votes for different directors. I ordered the directors from in the order of votes to make the overall distribution of votes clearer.
 
 
-```{r  message=FALSE, warning=FALSE}
+```{r director_vote_distribution, echo=FALSE, cache=TRUE, cache.path = 'cache/', fig.path='figure/', message=FALSE, warning=FALSE}
 ggplot(aes(x=reorder(selectionDirector,-Totals), 
            y=Totals), 
        data=votesbyDirector) +
@@ -301,7 +301,7 @@ From this plot, it's clear that most directors receive only a few votes, but the
 
 I next wanted to see who the top directors were and how many votes they got. I took the top 2.5% of directors by number of votes and created an ordered chart.
 
-```{r  message=FALSE, warning=FALSE}
+```{r top_director_vote_distribution, echo=FALSE, cache=TRUE, cache.path = 'cache/', fig.path='figure/', message=FALSE, warning=FALSE}
 top_20_director <- 
   subset(votesbyDirector, 
          Totals >= quantile(Totals,0.975))
@@ -319,7 +319,7 @@ Looking at this list, it's also clear that these top directors are all male and 
 
 In addition to the number of votes, I decided it would be interesting to see what decades each of these directors was most active in. In order to do this, I created a variable called Active_Decade by taking the median of the decade variable created earlier for each director. While this is not a perfect representation of a given director's most active decades, it gives a good idea of when a director made most of his movies. 
 
-```{r  message=FALSE, warning=FALSE}
+```{r director_vote_distribution_decade, echo=FALSE, cache=TRUE, cache.path = 'cache/', fig.path='figure/', message=FALSE, warning=FALSE}
 #group by directors
 director_groups <- 
   group_by(critic_data, selectionDirector)
@@ -354,7 +354,7 @@ This chart echoes the histogram of movie distribution by decade in that director
 
 Next I thought it might be interesting to look at this data for a few countries with a significant number of votes. I started with Spain because it had the third highest number of voters but speaks a different language from the US and the UK which have the first and second highest number of voters. I created the chart with the code below.
 
-```{r  message=FALSE, warning=FALSE}
+```{r director_vote_distribution_Spain, echo=FALSE, cache=TRUE, cache.path = 'cache/', fig.path='figure/', message=FALSE, warning=FALSE}
 #create a subset of the data with only voters from spain
 Spain.votes <- 
   subset(critic_data, country=="Spain")
@@ -411,7 +411,7 @@ top.directors.countries <-
 ```
 I then applied it to France.
 
-```{r  message=FALSE, warning=FALSE}
+```{r director_vote_distribution_France, echo=FALSE, cache=TRUE, cache.path = 'cache/', fig.path='figure/', message=FALSE, warning=FALSE}
 France.directors <- 
   top.directors.countries(critic_data, "France", 0.85)
 ggplot(aes(x=reorder(selectionDirector,-Totals), 
@@ -433,7 +433,7 @@ Compared to many of the other countries, French voters seem to have voted for di
 
 To be fair to the UK, I decided to include them in the fun.
 
-```{r  message=FALSE, warning=FALSE}
+```{r director_vote_distribution_UK, echo=FALSE, cache=TRUE, cache.path = 'cache/', fig.path='figure/', message=FALSE, warning=FALSE}
 UK.directors <- 
   top.directors.countries(critic_data, "UK", 0.95)
 ggplot(aes(x=reorder(selectionDirector,-Totals), 
@@ -455,7 +455,7 @@ Most notable for voters in the UK is the high ranking of Powell and Pressburger,
 
 At this point I decided to round out the top five voting countries.
 
-```{r  message=FALSE, warning=FALSE}
+```{r director_vote_distribution_US, echo=FALSE, cache=TRUE, cache.path = 'cache/', fig.path='figure/', message=FALSE, warning=FALSE}
 US.directors <- 
   top.directors.countries(critic_data, "US", 0.93)
 ggplot(aes(x=reorder(selectionDirector,-Totals), 
@@ -471,7 +471,8 @@ ggplot(aes(x=reorder(selectionDirector,-Totals),
   scale_color_brewer(palette = "Paired")+
   scale_fill_brewer(palette = "Paired")+
   coord_flip()
-
+```
+```{r director_vote_distribution_Germany, echo=FALSE, cache=TRUE, cache.path = 'cache/', fig.path='figure/', message=FALSE, warning=FALSE}
 Germany.directors <- 
   top.directors.countries(critic_data, "Germany", 0.85)
 ggplot(aes(x=reorder(selectionDirector,-Totals), 
@@ -533,7 +534,7 @@ top.votes.by.director.country$selectionDirector <-
 
 I first tried plotting the ranks of all directors against the critics of all countries. The results are obviously completely unreadable.
 
-```{r  message=FALSE, warning=FALSE}
+```{r ranks, echo=FALSE, cache=TRUE, cache.path = 'cache/', fig.path='figure/', message=FALSE, warning=FALSE}
 ggplot(aes(x=country, 
            y=director.rank, 
            color=selectionDirector, 
@@ -544,7 +545,7 @@ ggplot(aes(x=country,
 
 I next decided to flip the graph and focus only on the number one director: Alfred Hitchcock. I reordered the countries by Hitchcock's rankings so that I would be able to see a trend.
 
-```{r  message=FALSE, warning=FALSE}
+```{r ranks_hitchcock, echo=FALSE, cache=TRUE, cache.path = 'cache/', fig.path='figure/', message=FALSE, warning=FALSE}
 #So I thought I might look director by director starting at the top
 ggplot(aes(x=reorder(country, director.rank), 
            y=director.rank, 
@@ -562,7 +563,7 @@ We can see that there is a fairly wide variance in the ranking of Hitchcock with
 
 I thought it would be interesting to get a similar snapshot of other directors.
 
-```{r  message=FALSE, warning=FALSE}
+```{r ranks_top_directors, echo=FALSE, cache=TRUE, cache.path = 'cache/', fig.path='figure/', message=FALSE, warning=FALSE}
 ggplot(aes(x=reorder(country, director.rank), 
            y=director.rank, 
            group=1), 
@@ -601,7 +602,7 @@ I then repeated the previous plot with the smaller number of countries.
 
 I was hoping to get them all onto a single line chart, but the results were not good.
 
-```{r  message=FALSE, warning=FALSE}
+```{r ranks_top_directors_single, echo=FALSE, cache=TRUE, cache.path = 'cache/', fig.path='figure/', message=FALSE, warning=FALSE}
 ggplot(aes(country, director.rank, 
            group = selectionDirector, 
            color=selectionDirector), 
@@ -612,7 +613,7 @@ ggplot(aes(country, director.rank,
 
 Instead I tried a faceted graph.
 
-```{r  message=FALSE, warning=FALSE}
+```{r ranks_top_directors_faceted, echo=FALSE, cache=TRUE, cache.path = 'cache/', fig.path='figure/', message=FALSE, warning=FALSE}
 ggplot(aes(x=reorder(country, director.rank), 
            y=director.rank, 
            group=1,
@@ -629,7 +630,7 @@ ggplot(aes(x=reorder(country, director.rank),
 
 I found it very difficult to see how each point matched up to its country and so I added some stripes to the background.
 
-```{r  message=FALSE, warning=FALSE}
+```{r ranks_top_directors_rectangles, echo=FALSE, cache=TRUE, cache.path = 'cache/', fig.path='figure/', message=FALSE, warning=FALSE}
 #creates a dataframe with the cutoffs for the different colors in the background of the chart
 rects <- 
   data.frame(xstart = seq(0.5,9.5,1), 
@@ -673,7 +674,7 @@ There is also some evidence that voters from a given country favor directors fro
 
 ###Plot 1
 
-```{r  message=FALSE, warning=FALSE}
+```{r final_votes_by_country, echo=FALSE, cache=TRUE, cache.path = 'cache/', fig.path='figure/', message=FALSE, warning=FALSE}
 top_vote_countries <- 
   subset(votersbyCountry, Totals >= quantile(Totals,0.8))
 ggplot(aes(y=reorder(country,-Totals), 
@@ -693,7 +694,7 @@ This distribution has significant implications for the meaning of the poll. It m
 
 
 ###Plot 2
-```{r  message=FALSE, warning=FALSE}
+```{r final_top_director_votes, echo=FALSE, cache=TRUE, cache.path = 'cache/', fig.path='figure/', message=FALSE, warning=FALSE}
 ggplot(aes(x=reorder(selectionDirector,-Totals), 
            y=Totals, 
            color=Active_Decade, 
@@ -720,7 +721,7 @@ This chart also echoes the histogram of movie distribution by decade in that dir
 
 ###Plot 3
 
-```{r  message=FALSE, warning=FALSE}
+```{r final_top_director_ranks, echo=FALSE, cache=TRUE, cache.path = 'cache/', fig.path='figure/', message=FALSE, warning=FALSE}
 ggplot() +
   geom_point(data=top.votes.by.director.country, 
              aes(x=country, 
