@@ -50,10 +50,13 @@ The code used for gathering and cleaning the data is provided here. Most of the 
 The first thing I did upon importing the data was to run a summary. I excluded the multitude of dummy variables.
 
 ```{r}
+#read CSV data into the data frame critic_data
 critic_data <- read.csv('dummies.csv', sep = ',')
+#creates a vector of the variables not including the dummy variables
 core.data <- c("country", "poll", "newName",
                "selectionYear", "selectionDirector",
                "rating","genre","language","country.1")
+#creates a summary of the data except for the dummy variables
 summary(critic_data[core.data])
 ```
 From this summary, we can see some interesting basic information which also serves as a basic confirmation that the data was downloaded and processed correctly up until this point.
@@ -100,9 +103,10 @@ I was also curious to see whether breaking this data down into the countries the
 
 In order to answer this kind of question, I had to do some data manipulation including creating the variable "decade" with the decade that a given movie was released in. The code is below.
 ```{r}
-#creates a decade variable for future analysis
+#creates a decade variable for future analysis by rounding down to nearest 10
 critic_data$decade <- 
   floor(critic_data$selectionYear/10)*10
+#creates a table of decades
 table(critic_data$decade)
 ```
 In the table above we can see a numerical version of the histogram that I created earlier. We can see that the 1960s have significantly more votes than the nearest competitor.
@@ -113,11 +117,15 @@ Due to the presence of countries with a very small number of votes, I set an arb
 
 ```{r}
 #finds countries with over 100 votes
+#removes NA rows
 country_sums <- 
   colSums(Filter(is.numeric, critic_data),
           na.rm = TRUE, )
+#finds country name columns where the sum of the column adds up to more than 100
 keep_vars <- names(country_sums[country_sums > 100])
+#creates a vector a with the columns names of the columns that will be used in the analysis
 a <- c("country","poll","selectionName","newName","rating","runtime")
+#Appends a to keep_vars to create a master vector of all variables to be kept for future analysis
 keep_vars <- c(keep_vars, a)
 #keeps variables with over 100 votes as well as variables with basic information
 new_data <- critic_data[keep_vars]
@@ -127,6 +135,7 @@ I then aggregated the movie location vote counts for countries that met the 100 
 ```{r}
 #creates movie location vote counts by decade
 decade_groups <- group_by(new_data, decade)
+#creates a summary of votes for each decade and country of interest
 votesbyDecade<-summarise(decade_groups,
                          Canada = sum(Canada),
                          China = sum(China),
@@ -166,6 +175,7 @@ ggplot(aes(y=votes,
 ```
 
 ```{r message=FALSE, warning=FALSE}
+#Applies the sum function to each combination of country and decade and creates a table
 with(votesbyDecade.long, 
      tapply(votes, list(country, decade), sum))
 ```
@@ -224,6 +234,7 @@ This graph shows the vast disparity in votes by country, but is not particularly
 I first aggregated the groups into the number of groups per country
 ```{r  message=FALSE, warning=FALSE}
 voter_groups <- group_by(critic_data, country)
+#aggregates into variable Totals, which is a count of votes in each country
 votersbyCountry <- summarise(voter_groups,
                              Totals = n())
 ```
@@ -231,6 +242,7 @@ votersbyCountry <- summarise(voter_groups,
 I then plotted the number of votes from each country. Since each voter has 10 votes, it can be assumed that the number of votes is simply 10 times the number of voters.
 
 ```{r votes_per_country_ordered, echo=FALSE, cache=TRUE, cache.path = 'cache/', fig.path='figure/', message=FALSE, warning=FALSE}
+#This plot reorders the x variable with the command "reorder" so that they are in descending order according to number of votes (variable Total)
 ggplot(aes(x=reorder(country, -Totals),
            y=Totals), 
        data=votersbyCountry) +
@@ -245,10 +257,11 @@ ggplot(aes(x=reorder(country, -Totals),
 From this chart, it is very clear that the votes are dominated by a very small number of countries.
 
 ```{r  message=FALSE, warning=FALSE}
-#cuts votes variable into a factor
+#cuts votes variable into a factor for each order of magnitude
 cuts <- 
   cut(votersbyCountry$Totals, 
       breaks = c(0,10,100,1000,10000))
+#creates a table showing the number of votes at each order of magnitude
 table(cuts)
 ```
 
@@ -258,6 +271,7 @@ This table also makes it clear that there are many countries with nearly 0 votes
 I wanted to get a closer look at what countries had the most votes so I replotted with only countries representing the top quintile of voting countries.
 
 ```{r most_votes, echo=FALSE, cache=TRUE, cache.path = 'cache/', fig.path='figure/', message=FALSE, warning=FALSE}
+#creates data frame top_votes_countries that keeps the top quantile of countries by vote count using the quantile command
 top_vote_countries <- 
   subset(votersbyCountry, 
          Totals >= quantile(Totals,0.8))
@@ -279,6 +293,7 @@ The first thing I did was group by director.
 
 ```{r  message=FALSE, warning=FALSE}
 director_groups <- group_by(critic_data, selectionDirector)
+#creates the dataframe votesbyDirector which aggregates votes by director into the Totals variable
 votesbyDirector <- summarise(director_groups,
                              Totals = n())
 ```
@@ -291,8 +306,8 @@ ggplot(aes(x=reorder(selectionDirector,-Totals),
            y=Totals), 
        data=votesbyDirector) +
   geom_point(alpha=0.5)+ 
-  theme(axis.text.x=element_blank())+
-  scale_x_discrete(breaks=NULL)+
+  theme(axis.text.x=element_blank())+ #This line removes text from the x axis
+  scale_x_discrete(breaks=NULL)+ #This line removes tick marks from the x axis
   ggtitle("Distribution of Votes by Director")+
   ylab("Number of Votes")+
   xlab("Each vote represents a director")
@@ -302,9 +317,11 @@ From this plot, it's clear that most directors receive only a few votes, but the
 I next wanted to see who the top directors were and how many votes they got. I took the top 2.5% of directors by number of votes and created an ordered chart.
 
 ```{r top_director_vote_distribution, echo=FALSE, cache=TRUE, cache.path = 'cache/', fig.path='figure/', message=FALSE, warning=FALSE}
+#Creates the dataframe top_20_director which keeps the top 2.5% of directors by number of votes
 top_20_director <- 
   subset(votesbyDirector, 
          Totals >= quantile(Totals,0.975))
+#Creates a chart of the Top 2.5% most voted for directors and the number of votes they received
 ggplot(aes(y=reorder(selectionDirector,-Totals), 
            x=Totals), 
        data=top_20_director) +
@@ -320,20 +337,22 @@ Looking at this list, it's also clear that these top directors are all male and 
 In addition to the number of votes, I decided it would be interesting to see what decades each of these directors was most active in. In order to do this, I created a variable called Active_Decade by taking the median of the decade variable created earlier for each director. While this is not a perfect representation of a given director's most active decades, it gives a good idea of when a director made most of his movies. 
 
 ```{r director_vote_distribution_decade, echo=FALSE, cache=TRUE, cache.path = 'cache/', fig.path='figure/', message=FALSE, warning=FALSE}
-#group by directors
+#group by directors 
 director_groups <- 
   group_by(critic_data, selectionDirector)
-#aggregates the data by director adding the Active_Decade variable
+#aggregates the data by director adding the Active_Decade variable which is a rough estimate of the director's most active decade
+#Also aggregates the number of votes into the Totals variable
 votesbyDirector <- summarise(director_groups,
                              Active_Decade = median(decade),
                              Totals = n())
 #convert Active_Decade into a factor for future use
 votesbyDirector$Active_Decade<- 
   as.factor(votesbyDirector$Active_Decade)
-#subset data and keep the top 2.5% of directors by number of votes
+#subset data and keep the top 2.5% of directors by number of votes in data frame called top_director
 top_director <- 
   subset(votesbyDirector, Totals >= quantile(Totals,0.975))
-#Create chart
+#Create chart. This chart uses both geom_point and geom_bar in order to create lollipop shaped bars which I find easier to read.
+#This also utilizes the scale_color_brewer and scale_fill_brewer to create a color palette that is easier to read
 ggplot(aes(x=reorder(selectionDirector,-Totals), 
            y=Totals, 
            color=Active_Decade, 
@@ -346,7 +365,7 @@ ggplot(aes(x=reorder(selectionDirector,-Totals),
   xlab("Director")+
   scale_color_brewer(palette = "Paired")+
   scale_fill_brewer(palette = "Paired")+
-  coord_flip()
+  coord_flip() #And flips the axes to make the x axis labels easier to read
 
 ```
 
@@ -355,25 +374,26 @@ This chart echoes the histogram of movie distribution by decade in that director
 Next I thought it might be interesting to look at this data for a few countries with a significant number of votes. I started with Spain because it had the third highest number of voters but speaks a different language from the US and the UK which have the first and second highest number of voters. I created the chart with the code below.
 
 ```{r director_vote_distribution_Spain, echo=FALSE, cache=TRUE, cache.path = 'cache/', fig.path='figure/', message=FALSE, warning=FALSE}
-#create a subset of the data with only voters from spain
+#create a subset of the data with only voters from spain in the variable Spain.votes
 Spain.votes <- 
   subset(critic_data, country=="Spain")
 #group the data in spain by director
 director.spain_groups <- 
   group_by(Spain.votes, selectionDirector)
-#summarise the data for spain
+#summarise the data for spain in dataframe votesbyDirectorSpain with variables Active_Decade and Totals,
+#which are the same variables as were used in the overall sample dataset
 votesbyDirectorSpain <- 
   summarise(director.spain_groups,
                              Active_Decade = median(decade),
                              Totals = n())
-#subset the data to get only the top directors
+#subset the data to get only the top 10% of directors by Vote in Spain in a dataframe called votesbyDirectorSpain.Top
 votesbyDirectorSpain.Top <- 
   subset(votesbyDirectorSpain, 
          Totals >= quantile(Totals,0.9))
 #converts to factor
 votesbyDirectorSpain.Top$Active_Decade <- 
   as.factor(votesbyDirectorSpain.Top$Active_Decade)
-#create chart
+#create chart, again using the lollipop shaped bars
 ggplot(aes(x=reorder(selectionDirector,-Totals), 
            y=Totals, 
            color=Active_Decade, 
@@ -394,18 +414,33 @@ Interestingly, in Spain, we see that John Ford, most famous for his Westerns cam
 In order to create charts for other countries, I decided to try writing an R function.
 
 ```{r  message=FALSE, warning=FALSE}
+#Creates the function top.directors.countries which subsets the data leaving only one country of interest,
+#aggregates the data by director and addes an active decade variable, and then leaves a specified percentile of top directors
+#returning a final data frame.
+#This function takes the following arguments:
+#data = data to be converted
+#country.name = name of the country in interest as appears in the dataset specified
+#percentile = percentile cutoff 
+
+#name of function
 top.directors.countries <- 
+#function arguments
   function(data, country.name, percentile) {
+#subsets data leaving only countries with name==country
   votes <- subset(data, country.name==country)
+#aggregates data by director and creates the active_decade variable
   director.groups <- group_by(votes, selectionDirector)
   votesbyDirector <- summarise(director.groups,
                                Active_Decade = median(decade),
                                Totals = n())
+#subsets the data, leaving only the top specified percentile
   votesbyDirector.Top <- 
     subset(votesbyDirector, 
            Totals >= quantile(Totals, percentile))
+#converts active_decade to factor for future use
   votesbyDirector.Top$Active_Decade<-
     as.factor(votesbyDirector.Top$Active_Decade)
+#returns a dataframe of the results
   return(data.frame(votesbyDirector.Top)) 
 } 
 ```
@@ -413,7 +448,7 @@ I then applied it to France.
 
 ```{r director_vote_distribution_France, echo=FALSE, cache=TRUE, cache.path = 'cache/', fig.path='figure/', message=FALSE, warning=FALSE}
 France.directors <- 
-  top.directors.countries(critic_data, "France", 0.85)
+  top.directors.countries(critic_data, "France", 0.85) #An application of the new function defined above
 ggplot(aes(x=reorder(selectionDirector,-Totals), 
            y=Totals, 
            color=Active_Decade, 
@@ -499,6 +534,7 @@ I first reagreggated the data by Director and the country of the voter who voted
 ```{r  message=FALSE, warning=FALSE}
 director.country.groups <- 
   group_by(critic_data, selectionDirector, country)
+#Aggregates votes for directors by country in the data frame votes.by.director.country in the variable Totals
 votes.by.director.country <- 
   summarise(director.country.groups,
             Totals = n())
@@ -509,16 +545,16 @@ Since each country has a different number of votes, I had to find a way to norma
 I ranked the directors in each country, and then decided that I wanted to only look at directors in the top 1 percentile of the overall vote. I accomplished this with the code below. 
 
 ```{r  message=FALSE, warning=FALSE}
-#Adds a column that ranks directors from most to least number of votes by country
+#Adds a column, director.rank, that ranks directors from most to least number of votes by country
 votes.by.director.country <- 
   transform(votes.by.director.country, 
             director.rank = ave(Totals, country, 
-                                FUN = function(x) rank(-x, ties.method = "first")))
+                                FUN = function(x) rank(-x, ties.method = "first"))) #Applies the rank function by country on the data in column Totals
 
-#creates a subset of the top percentile of directors by vote count
+#creates a subset of the top percentile of directors by vote count in dataframe top.1.perc.director
 top.1.perc.director <- 
   subset(votesbyDirector, Totals >= quantile(Totals,0.99))
-#converts the column of directors in top.1.perc.director into a vector
+#converts the column of directors in top.1.perc.director into a vector called directors
 directors <- 
   top.1.perc.director[['selectionDirector']]
 #creates a boolean vector with TRUE representing all directors in the list directors
@@ -549,9 +585,9 @@ I next decided to flip the graph and focus only on the number one director: Alfr
 #So I thought I might look director by director starting at the top
 ggplot(aes(x=reorder(country, director.rank), 
            y=director.rank, 
-           group=1), 
+           group=1), #This line groups all points together to allow geom_line to recognize that all the points need to be joined together
        data=subset(top.votes.by.director.country,
-                   selectionDirector == "Alfred Hitchcock")) +
+                   selectionDirector == "Alfred Hitchcock")) + #Takes just votes with the vote "Alfred Hitchcock"
          geom_line() + 
          coord_flip() +  
   ggtitle("Rankings of Alfred Hitchcock across countries")+
@@ -566,12 +602,12 @@ I thought it would be interesting to get a similar snapshot of other directors.
 ```{r ranks_top_directors, echo=FALSE, cache=TRUE, cache.path = 'cache/', fig.path='figure/', message=FALSE, warning=FALSE}
 ggplot(aes(x=reorder(country, director.rank), 
            y=director.rank, 
-           group=1), 
+           group=1),  #This line groups all points together to allow geom_line to recognize that all the points need to be joined together
        data=top.votes.by.director.country) +
   geom_line(color='black') +
   coord_flip() +
-  facet_wrap(~selectionDirector) +
-  theme(axis.text.x=element_blank())+
+  facet_wrap(~selectionDirector) + #facet by director
+  theme(axis.text.x=element_blank())+ #Remove x axis text (y axis after flip)
   scale_x_discrete(breaks=NULL) +
   xlab("Director Rank") +
   ylab("Country")+
@@ -585,11 +621,11 @@ As I looked at this data, it occured to me that one significant problem with cou
 I used the code below to subset the data.
 
 ```{r  message=FALSE, warning=FALSE}
-#creates a data set with only the names of the top countries
+#creates a data set with only the names of the top countries with name top_10_countries
 top_10_countries <- 
   subset(votersbyCountry, Totals >= 
            quantile(Totals,0.935))[['country']]
-#finds the countries in the list created above in the top.votes.by.director.country and creates an boolean array indicating which cells to keep
+#finds the countries in the list created above in the top.votes.by.director.country and creates an boolean array called keep indicating which cells to keep
 keep <- 
   apply(top.votes.by.director.country,1,
         function(x) any(x %in% top_10_countries))
@@ -608,7 +644,7 @@ ggplot(aes(country, director.rank,
            color=selectionDirector), 
        data=top.votes.by.director.country)+
   geom_line()+
-  coord_cartesian(ylim = c(0,40))
+  coord_cartesian(ylim = c(0,40)) #limits y axis to the range 0 to 40
 ```
 
 Instead I tried a faceted graph.
@@ -622,7 +658,7 @@ ggplot(aes(x=reorder(country, director.rank),
   geom_line(color='black') + 
   geom_point(size=5) +
   coord_flip() +
-  facet_wrap(~selectionDirector) +
+  facet_wrap(~selectionDirector) + #facet by director
   xlab("Director Rank") +
   ylab("Country")+
   ggtitle("Relative rankings of top directors across countries")
@@ -631,11 +667,13 @@ ggplot(aes(x=reorder(country, director.rank),
 I found it very difficult to see how each point matched up to its country and so I added some stripes to the background.
 
 ```{r ranks_top_directors_rectangles, echo=FALSE, cache=TRUE, cache.path = 'cache/', fig.path='figure/', message=FALSE, warning=FALSE}
-#creates a dataframe with the cutoffs for the different colors in the background of the chart
+#creates a dataframe "rects" with the cutoffs for the different colors in the background of the chart
 rects <- 
   data.frame(xstart = seq(0.5,9.5,1), 
              xend = seq(1.5,10.5,1), 
-             col = c("US","UK","Sweden","Spain","Italy","Germany","France","Canada","Australia","Argentina"))
+             col = c("US","UK","Sweden","Spain",
+                     "Italy","Germany","France",
+                     "Canada","Australia","Argentina"))
 
 #creates the chart
 ggplot() +
@@ -649,16 +687,20 @@ ggplot() +
                 y=director.rank, 
                 group=1)) +
   #This line draws a series of rectangles on the plot to create the striped background.
+  #It applies the dataframe rects defined earlier to tell geom_rect the boundaries of the
+  #rectangles
+  #Since the rectangles are in front of the points, alpha is set to 0.5 to allow for 
+  #the points to show through.
   geom_rect(data=rects,
             aes(ymin=0,
                 ymax=80,
                 xmin=xstart,
                 xmax=xend,
                 fill=col), 
-            alpha=0.5) +
+            alpha=0.5) + 
   coord_flip() +
   facet_wrap(~selectionDirector) +
-  theme(legend.position="none") +
+  theme(legend.position="none") + #removes legend
   scale_fill_brewer(palette = "Set3") +
   ggtitle("Director Vote Rank Across Countries")+
   xlab("Rank")+
