@@ -1,0 +1,749 @@
+#An Analysis of Cinema's Great Directors
+##Alexander Moore
+
+#Introduction
+Every decade, the British Film Institute's (BFI) official film magazine, *Sight and Sound*, publishes a ranked list of the 250 films that the cinema establishment considers the greatest films of all time. The magazine polls a global sample of nearly 1000 critics, academics, directors, and other film experts and asks them simply to submit a list of 10 films that they consider the greatest ever. They then tabulate the votes in order to create their list.
+
+When *Sight and Sound* published its most recent poll in 2012, it also created a website which publishes the 10 selections of each voter. This data can be found at this url: <http://explore.bfi.org.uk/sightandsoundpolls/2012/voter>. The site provides basic data on the voters and their selections. In my project, I have decided to take a closer look at this data to examine the voting patterns of these voters.
+
+
+#The Data
+The first step in this process was data collection. Since the data was not available in a readily downloadable or analyzable format, I created scripts which screen scraped and then formatted the data from the BFI website. This process involved automatically processing several hundred web pages of data like this one: <http://explore.bfi.org.uk/sightandsoundpolls/2012/voter/145>. The relevant data about the voters and their selections was pulled straight from these websites.  
+
+In addition, I wanted more data on each of the selected movies. I turned to The Open Movie Database API (<http://www.omdbapi.com/>) in order to supplement the data provided by the BFI. OMDB provides an application programming interface (API) which allows for efficient downloading of relevant data.
+
+Once the two datasets were downloaded, they were merged together. While much of the merging was done automatically, subtle differences in movie titles required that some merging be done by hand.
+
+###BFI Data
+Below I have documented the data provided by the BFI and the corresponding column in the dataset.
+
+fName - Voter First Name  
+lName: Voter Last Name  
+country: Voter country of origin  
+poll: Whether their vote is counted in the critics poll or the directors poll  
+selectionName: Name of movie voted for  
+selectionYear: Year of movie voted for  
+
+###OMDBAPI Data
+Next, I have documented the data provided by The Open Movie Database API (OMDBAPI) and the corresponding column in the dataset.
+
+newName: Name of movie voted for in the OMDBAPI  
+rating: The rating of the movie  
+genre: The genre or genres of the movie  
+language: The language or languages used in the movie  
+country.1: The country or countries involved with the movie  
+
+Since the variables genre, language, and country often included multiple values per movie, these were converted into dummy variables with Python.
+
+###Generated Dummy Variables
+The genre variable was divided into 28 dummy variables from Action to Western.  
+The language variable was divided into 125 dummy variables from Ancient (to 1453) to Zulu.  
+The country variable was divided into 94 dummy variables from Albania to Yugoslavia.
+
+The code used for gathering and cleaning the data is provided here: <https://github.com/dent424/film_survey/blob/master/bfi_data_request.py>. Most of the basic formatting and cleaning of the data was done in Python before the data was imported into R.
+
+
+#Exploratory Analysis
+
+###Basic Summary of Data
+
+The first thing I did upon importing the data was to run a summary. I excluded the multitude of dummy variables.
+
+```{r}
+#read CSV data into the data frame critic_data
+critic_data <- read.csv('dummies.csv', sep = ',')
+#creates a vector of the variables not including the dummy variables
+core.data <- c("country", "poll", "newName",
+               "selectionYear", "selectionDirector",
+               "rating","genre","language","country.1")
+#creates a summary of the data except for the dummy variables
+summary(critic_data[core.data])
+```
+
+
+From this summary, we can see some interesting basic information which also serves as a basic confirmation that the data was downloaded and processed correctly up until this point.
+
+First of all, from the summary of movies selection (newName), we can see that the top six values displayed here track closely with the top movies on the BFI website. There are slight differences since the BFI website separates the voters into a critics and a directors result whereas I have combined them into a single one. Still, we can see that the top three, Vertigo, Citizen Kane, and Tokyo Story are the same and that the other 3 movies have plausible rankings. 
+
+By looking at the directors of the selected movies (selectionDirector) we can see that Alfred Hitchcock (director of the #1 ranked movie Vertigo) comes out on top with other film luminaries like Jean-Luc Godard, Orson Welles, and Yasujiro Ozu following behind. This output makes sense given that all of these top directors are generally considered the greatest directors in cinema. 
+
+In general the other variables made sense as well, although the prominent blanks in both rating and language were somewhat worrying. Upon examining the raw data, it appears that these blanks are in fact the case. 
+
+After this I also set up the following packages for later use.
+```{r message=FALSE, warning=FALSE}
+library(ggplot2) #for making fancy graphs
+library(dplyr) #for manipulating data
+library(reshape2) #for reshaping data
+library(RColorBrewer) #for a more robust set of color palettes
+library(gridExtra) #for combining charts together
+#omit NA
+critic_data=na.omit(critic_data)
+#creates a variable that aggregates the countries Germany and West Germany
+critic_data$Germany.Aggregate <- 
+  critic_data$Germany + critic_data$West.Germany
+```
+
+###Most critically acclaimed decade
+
+The first thing I wanted to see was the distribution of votes across decades. I was curious to see what decades might be considered the greatest in cinema.
+
+
+
+I started off by making a histogram with a bin width of 10 years so that each bar represents a decade.
+```{r decade_histogram, echo=FALSE, cache=TRUE, cache.path = 'cache/', fig.path='figure/'}
+ggplot(aes(x=selectionYear), 
+       data=critic_data) +
+  geom_histogram(binwidth=10, 
+                 color="Black", 
+                 fill="White")+
+  ggtitle("Votes by decade")+
+  ylab("Votes") +
+  xlab("Decade")
+```
+
+
+We can see that there is a peak is in the 1960s which tapers off in both directions. Both the 1950s and 1970s have a significant number of votes. This result makes intuitive sense for several reasons. Newer movies are often considered too new to be considered classics and so we might expect there to be fewer votes for relatively new movies. For the earlier movies, the fact that there are simply not all that many movies to pick from may be a significant factor in there being fewer votes. This data seems to confirm the anecdotal evidence that movies in the 1950~1970 period are often held in high regard. 
+
+I was also curious to see whether breaking this data down into the countries they were made in would show interesting trends. For example, did Germany have a golden age in the 1930s? How important was the 1960s to Italy?
+
+In order to answer this kind of question, I had to do some data manipulation including creating the variable "decade" with the decade that a given movie was released in. The code is below.
+```{r}
+#creates a decade variable for future analysis by rounding down to nearest 10
+critic_data$decade <- 
+  floor(critic_data$selectionYear/10)*10
+#creates a table of decades
+table(critic_data$decade)
+```
+
+
+In the table above we can see a numerical version of the histogram that I created earlier. We can see that the 1960s have significantly more votes than the nearest competitor.
+
+I also decided to make a boxplot of the data to get a better look.
+
+Due to the presence of countries with a very small number of votes, I set an arbitrary threshold of 100 votes and filtered out the countries that had fewer than that number of votes.
+
+```{r}
+#finds countries with over 100 votes
+#removes NA rows
+country_sums <- 
+  colSums(Filter(is.numeric, critic_data),
+          na.rm = TRUE, )
+#finds country name columns where the sum of the column adds up to more than 100
+keep_vars <- names(country_sums[country_sums > 100])
+#creates a vector a with the columns names of the columns that will be used in the analysis
+a <- c("country","poll","selectionName","newName","rating","runtime")
+#Appends a to keep_vars to create a master vector of all variables to be kept for future analysis
+keep_vars <- c(keep_vars, a)
+#keeps variables with over 100 votes as well as variables with basic information
+new_data <- critic_data[keep_vars]
+```
+
+
+I then aggregated the movie location vote counts for countries that met the 100 vote threshold by decade and then converted the data from a wide to a long format.
+
+```{r}
+#creates movie location vote counts by decade
+decade_groups <- group_by(new_data, decade)
+#creates a summary of votes for each decade and country of interest
+votesbyDecade<-summarise(decade_groups,
+                         Canada = sum(Canada),
+                         China = sum(China),
+                         Denmark=sum(Denmark),
+                         France =sum(France),
+                         Germany = sum(Germany),
+                         Hong.Kong = sum(Hong.Kong),
+                         India = sum(India),
+                         Iran = sum(Iran),
+                         Italy = sum(Italy),
+                         Japan = sum(Japan),
+                         Mexico = sum(Mexico),
+                         Ussr = sum(Soviet.Union),
+                         Spain = sum(Spain),
+                         Sweden = sum(Sweden),
+                         Switzerland = sum(Switzerland),
+                         Taiwan = sum(Taiwan),
+                         UK = sum(UK),
+                         USA = sum(USA),
+                         West.Germany = sum(West.Germany),
+                         Germany.Aggregate = sum(Germany.Aggregate))
+#converts to long format for analysis
+votesbyDecade.long <- melt(votesbyDecade, 
+                           id.vars=c("decade"),
+                           variable.name="country",
+                           value.name="votes")
+```
+
+
+I then made a faceted graph of these countries.
+
+```{r decade_histogram_country, echo=FALSE, cache=TRUE, cache.path = 'cache/', fig.path='figure/'}
+ggplot(aes(y=votes,
+           x=decade),
+       data=votesbyDecade.long)+
+  geom_line() +
+  facet_wrap(~country)+
+  ggtitle("Votes by Decade and Country")
+```
+
+```{r message=FALSE, warning=FALSE}
+#Applies the sum function to each combination of country and decade and creates a table
+with(votesbyDecade.long, 
+     tapply(votes, list(country, decade), sum))
+```
+
+
+We can see that even in this top group, the number of movies is dominated by a few countries. These countries include USA, Japan, Italy, and France. In addition we can see that many countries encounter a distinct peak. Notable peaks include France and Italy in the 1960, Japan in the 1950s, and the USA in the 1950s and the 1970s. Each of these peaks seems to correspond with a few auteurs that worked in those decades. In France in the 1960s we have the French New Wave directors including luminaries such as Jean-Luc Godard and Francois Truffaut. In Italy in the 1960s, we have Frederico Fellini and Michaelangelo Antonioni. In the 1950s in the USA we have directors like Alfred Hitchcock, Billy Wilder, and Elia Kazan, and John Ford. The 1970s in the US we have Francis Ford Coppola and Martin Scorsese. Japan in the 1950s featured major works by Akira Kurosawa and Yasujiro Ozu.
+
+Also, please note that in this chart, I have also created the country "Germany.Aggregate" which combines Germany and West Germany.
+
+Upon seeing this chart, I realized that it was somewhat difficult to see the trends in countries with a relatively small number of votes so I converted the data into percentages within that country. 
+
+```{r}
+#group by country
+country_groups <- 
+  group_by(votesbyDecade.long, country)
+#create a column of total votes by country
+votesbyCountry <- 
+  summarise(country_groups, Totals = sum(votes))
+#convert absolute vote numbers into percentages for each country
+country_percentages <- 
+  merge(votesbyDecade.long, 
+        votesbyCountry, 
+        by="country")
+country_percentages$percentages <- 
+  (country_percentages$votes/country_percentages$Totals)*100
+```
+
+I then made another faceted graph which exchanged absolute values for percentages.
+
+```{r message=FALSE, warning=FALSE, decade_histogram_country_pct, echo=FALSE, cache=TRUE, cache.path = 'cache/', fig.path='figure/' }
+ggplot(aes(y=percentages,
+           x=decade),
+       data=country_percentages)+
+  geom_line() +
+  facet_wrap(~country)+
+  ggtitle("Percent Votes by Decade and Country")
+```
+
+This analysis indicates that most countries seem to be dominated by one or two significant peaks in their history. This phenomenon could indicate the influence of one or two auteurs dominating the movie scene of that country or perhaps a particularly influential movement in that country in that time period. As an illustration, it seems likely that the peak in India in the 1950s would be from the movies of Satyajit Ray who is widely considered the greatest film maker in Indian history. Similarly it seems likely that the peak in Sweden in the 1960s would be largely the result of Ingmar Bergman movies. Notable exceptions to this trend include the UK, the USA, France.
+
+###Analysis of Voters
+While looking at the top directors, I became interested in the distribution of voters among countries. 
+
+I started off by plotting a chart of the number of votes from each country. I left the bars unlabeled to improve readability. 
+
+
+
+```{r votes_per_country, echo=FALSE, cache=TRUE, cache.path = 'cache/', fig.path='figure/', message=FALSE, warning=FALSE}
+ggplot(aes(x=country), 
+       data=critic_data) +
+  geom_bar() +
+  ggtitle("Votes by Country")+
+  theme(axis.text.x=element_blank())+
+  scale_x_discrete(breaks=NULL) +
+  ylab("votes")
+```
+
+
+This graph shows the vast disparity in votes by country, but is not particularly satisfying. I decided to reorder the countries from most to fewest votes to get a better idea of the distribution of votes. 
+
+I first aggregated the groups into the number of groups per country.
+```{r  message=FALSE, warning=FALSE}
+voter_groups <- group_by(critic_data, country)
+#aggregates into variable Totals, which is a count of votes in each country
+votersbyCountry <- summarise(voter_groups,
+                             Totals = n())
+```
+
+I then plotted the number of votes from each country. Since each voter has 10 votes, it can be assumed that the number of votes is simply 10 times the number of voters. Again the countries are not labeled inthis graph in order to improve readability.
+
+```{r votes_per_country_ordered, echo=FALSE, cache=TRUE, cache.path = 'cache/', fig.path='figure/', message=FALSE, warning=FALSE}
+#This plot reorders the x variable with the command "reorder" so that they are in descending order according to number of votes (variable Total)
+ggplot(aes(x=reorder(country, -Totals),
+           y=Totals), 
+       data=votersbyCountry) +
+  geom_point(stat="identity") +
+  ggtitle("Votes Originating in Each Country") +
+  ylab("Number of Votes") +
+  xlab("Each point represents a country") +
+  theme(axis.text.x=element_blank())+
+  scale_x_discrete(breaks=NULL)
+```
+
+From this chart, it is very clear that the votes are dominated by a very small number of countries.
+
+```{r  message=FALSE, warning=FALSE}
+#cuts votes variable into a factor for each order of magnitude
+cuts <- 
+  cut(votersbyCountry$Totals, 
+      breaks = c(0,10,100,1000,10000))
+#creates a table showing the number of votes at each order of magnitude
+table(cuts)
+```
+
+This table also makes it clear that there are many countries with nearly 0 votes and close a few countries with hundreds of votes. 
+
+
+I wanted to get a closer look at what countries had the most votes so I replotted with only countries representing the top quintile of voting countries.
+
+
+```{r final_votes_by_country, echo=FALSE, cache=TRUE, cache.path = 'cache/', fig.path='figure/', message=FALSE, warning=FALSE}
+top_vote_countries <- 
+  subset(votersbyCountry, Totals >= quantile(Totals,0.8))
+ggplot(aes(y=reorder(country,-Totals), 
+           x=Totals), 
+       data=top_vote_countries) +
+  geom_point()+ 
+  ggtitle("Number of Votes Originating in Each Country - Top Quintile")+
+  xlab("Number of Votes")+
+  ylab("Country")
+```
+
+This plot shows that the UK and the US have by far the most votes. It makes sense that the UK has so many votes as Sight and Sound is a publication based in the UK. It's also unsurprising that the US has so many votes since the US in general represents such a large percentage of the global film industry. It's notable that this list is dominated by Europe and English speaking countries. Out of the countries with the top 20% highest number of votes, only 9 out of the 29 are outside of these regions. 
+
+This distribution has significant implications for the meaning of the poll. It means that the overall ranking of the movies, published in Sight and Sound Magazine in 2012, is largely representative of the opinions of film professionals in the UK and the US. While the opinions of voters from across the world were taken into account, in the end it would be safe to say that a film that is not popular in the UK or US would not make it to a very high position on this list no matter how popular it might be everywhere else. Put another way, the results of this poll are heavily weighted towards the tastes of film professionals in the US and UK.  
+
+###Analysis of Director Votes by Country
+Seeing the large variance in vote numbers between countries, I was curious to see how homogeneous rankings of various directors were between countries. For example, Alfred Hitchcock is considered the greatest director when we aggregate across all voters, but is he considered the greatest director by voters in Germany? 
+
+The first thing I did was group by director.
+
+```{r  message=FALSE, warning=FALSE}
+director_groups <- group_by(critic_data, selectionDirector)
+#creates the dataframe votesbyDirector which aggregates votes by director into the Totals variable
+votesbyDirector <- summarise(director_groups,
+                             Totals = n())
+```
+
+The first thing I wanted to see was the overall distribution of votes for different directors. I ordered the directors from in the order of votes to make the overall distribution of votes clearer.
+
+
+```{r director_vote_distribution, echo=FALSE, cache=TRUE, cache.path = 'cache/', fig.path='figure/', message=FALSE, warning=FALSE}
+ggplot(aes(x=reorder(selectionDirector,-Totals), 
+           y=Totals), 
+       data=votesbyDirector) +
+  geom_point(alpha=0.5)+ 
+  theme(axis.text.x=element_blank())+ #This line removes text from the x axis
+  scale_x_discrete(breaks=NULL)+ #This line removes tick marks from the x axis
+  ggtitle("Distribution of Votes by Director")+
+  ylab("Number of Votes")+
+  xlab("Each point represents a director")
+```
+
+
+From this plot, it's clear that most directors receive only a few votes, but the top few directors receive a number of votes an order of magnitude or more higher than the number of votes that go to the median director.  
+
+I next wanted to see who the top directors were and how many votes they got. I took the top 2.5% of directors by number of votes and created an ordered chart.
+
+```{r top_director_vote_distribution, echo=FALSE, cache=TRUE, cache.path = 'cache/', fig.path='figure/', message=FALSE, warning=FALSE}
+#Creates the dataframe top_20_director which keeps the top 2.5% of directors by number of votes
+top_20_director <- 
+  subset(votesbyDirector, 
+         Totals >= quantile(Totals,0.975))
+#Creates a chart of the Top 2.5% most voted for directors and the number of votes they received
+ggplot(aes(y=reorder(selectionDirector,-Totals), 
+           x=Totals), 
+       data=top_20_director) +
+  geom_point()+ 
+  ggtitle("Top 2.5% Most Voted For Directors")+
+  xlab("Number of Votes")+
+  ylab("Director")
+```
+
+
+Unsurprisingly, the labels on the y-axis include many of the most famous directors of all time. We already saw earlier when we tabulated the data that Alfred Hitchcock, Jean-Luc Godard, and Orson Welles each had several hundred votes. Interestingly, even within this limited range of extremely famous directors, the number of votes received by the top ranked Alfred Hitchcock is nearly four times higher than the number of votes received by Francois Truffaut ranked 29th. 
+
+Looking at this list, it's also clear that these top directors are all male and largely hail from Europe and the United States. Of the top 10 directors by votes received, the only one from outside of these regions is Yasujiro Ozu from Japan. In fact, out of these top 29 directors, there are no directors that hail from outside Europe, the United States, and Japan. This result makes sense when I think back to the distribution of voters. The voters were heavily North American and European, and it makes sense to assume that critics would have a tendency to vote for movies they are culturally familiar with. In addition, in general, Europe, the United States, and Japan had thriving film industries earlier than countries in other parts of the world. Since it appears to take a few decades before a given movie is considered great, it would make sense that countries that have produced more high quality relatively recently, like China, would not yet be on this list. Perhaps in years to come, countries like China, Korea, India, Iran, Mexico, and Brazil, each with a thriving cinema culture, will be featured more prominently on this kind of ranking. 
+
+In addition to the number of votes, I decided it would be interesting to see in what decades each of these directors was most active. In order to do this, I created a variable called Active_Decade by taking the median of the decade variable created earlier for each director. While this is not a perfect representation of a given director's most active decades, it gives a good idea of when a director made most of his movies. 
+
+```{r director_vote_distribution_decade, echo=FALSE, cache=TRUE, cache.path = 'cache/', fig.path='figure/', message=FALSE, warning=FALSE}
+#group by directors 
+director_groups <- 
+  group_by(critic_data, selectionDirector)
+#aggregates the data by director adding the Active_Decade variable which is a rough estimate of the director's most active decade
+#Also aggregates the number of votes into the Totals variable
+votesbyDirector <- summarise(director_groups,
+                             Active_Decade = median(decade),
+                             Totals = n())
+#convert Active_Decade into a factor for future use
+votesbyDirector$Active_Decade<- 
+  as.factor(votesbyDirector$Active_Decade)
+#subset data and keep the top 2.5% of directors by number of votes in data frame called top_director
+top_director <- 
+  subset(votesbyDirector, Totals >= quantile(Totals,0.975))
+#Create chart. This chart uses both geom_point and geom_bar in order to create lollipop shaped bars which I find easier to read.
+#This also utilizes the scale_color_brewer and scale_fill_brewer to create a color palette that is easier to read
+ggplot(aes(x=reorder(selectionDirector,-Totals), 
+           y=Totals, 
+           color=Active_Decade, 
+           fill=Active_Decade), 
+       data=top_director) +
+  geom_point(size = 4)+ 
+  geom_bar(stat="identity", width=0.1) +
+  ggtitle("Top 2.5% Most Voted For Directors")+
+  ylab("Number of Votes")+
+  xlab("Director")+
+  scale_color_brewer(palette = "Paired")+
+  scale_fill_brewer(palette = "Paired")+
+  coord_flip()
+
+```
+
+Unsurprisingly, the labels on the y-axis include many of the most famous directors of all time. We already saw earlier when we tabulated the data that Alfred Hitchcock, Jean-Luc Godard, and Orson Welles each had several hundred votes. Interestingly, even within this limited range of extremely famous directors, the number of votes received by the top ranked Alfred Hitchcock is nearly four times higher than the number of votes received by Francois Truffaut ranked 29th. 
+
+Looking at this list, it's also clear that these top directors are all male and largely hail from Europe and the United States. Of the top 10 directors by votes received, the only one from outside of these regions is Yasujiro Ozu from Japan. In fact, out of these top 29 directors, there are no directors that hail from outside Europe, the United States, and Japan. This result makes sense when I think back to the distribution of voters. The voters were heavily North American and European, and it makes sense to assume that critics would have a tendency to vote for movies they are culturally familiar with. In addition, in general, Europe, the United States, and Japan had thriving film industries earlier than countries in other parts of the world. Since it appears to take a few decades before a given movie is considered great, it would make sense that countries that have produced more high quality relatively recently, like China, would not yet be on this list. Perhaps in years to come, countries like China, Korea, India, Iran, Mexico, and Brazil, each with a thriving cinema culture will be featured more prominently on this kind of ranking. 
+
+This chart also echoes the histogram of movie distribution by decade in that directors from the 1950s, 1960s, and 1970s are most common. From this chart we can also see that David Lynch is the most recent director in this group while Sergei Eisenstein and F.W. Murnau from the silent era are the oldest.
+
+Next I decided to look at the same data by country to see how stable these preferences for directors are across countries.
+
+```{r director_vote_distribution_Spain, echo=FALSE, cache=TRUE, cache.path = 'cache/', fig.path='figure/', message=FALSE, warning=FALSE}
+#create a subset of the data with only voters from spain in the variable Spain.votes
+Spain.votes <- 
+  subset(critic_data, country=="Spain")
+#group the data in spain by director
+director.spain_groups <- 
+  group_by(Spain.votes, selectionDirector)
+#summarise the data for spain in dataframe votesbyDirectorSpain with variables Active_Decade and Totals,
+#which are the same variables as were used in the overall sample dataset
+votesbyDirectorSpain <- 
+  summarise(director.spain_groups,
+                             Active_Decade = median(decade),
+                             Totals = n())
+#subset the data to get only the top 10% of directors by Vote in Spain in a dataframe called votesbyDirectorSpain.Top
+votesbyDirectorSpain.Top <- 
+  subset(votesbyDirectorSpain, 
+         Totals >= quantile(Totals,0.9))
+#converts to factor
+votesbyDirectorSpain.Top$Active_Decade <- 
+  as.factor(votesbyDirectorSpain.Top$Active_Decade)
+#create chart, again using the lollipop shaped bars
+ggplot(aes(x=reorder(selectionDirector,-Totals), 
+           y=Totals, 
+           color=Active_Decade, 
+           fill=Active_Decade), 
+       data=votesbyDirectorSpain.Top) +
+  geom_point(size=5)+ 
+  geom_bar(stat="identity", width=0.1) +
+  ggtitle("Distribution of Spanish Votes by Director")+
+  xlab("Number of Votes")+
+  ylab("Each vote represents a director")+
+  scale_color_brewer(palette = "Dark2")+
+  scale_fill_brewer(palette = "Dark2")+
+  coord_flip()
+```
+
+Interestingly, in Spain, we see that John Ford, most famous for his Westerns came out with the most votes. Unsurprisingly, Luis Bunuel, a very famous Spanish director, comes in second despite being ranked 15th in the overall poll. 
+
+In order to create charts for other countries, I decided to try writing an R function.
+
+```{r  message=FALSE, warning=FALSE}
+#Creates the function top.directors.countries which subsets the data leaving only one country of interest,
+#aggregates the data by director and addes an active decade variable, and then leaves a specified percentile of top directors
+#returning a final data frame.
+#This function takes the following arguments:
+#data = data to be converted
+#country.name = name of the country in interest as appears in the dataset specified
+#percentile = percentile cutoff 
+
+#name of function
+top.directors.countries <- 
+#function arguments
+  function(data, country.name, percentile) {
+#subsets data leaving only countries with name==country
+  votes <- subset(data, country.name==country)
+#aggregates data by director and creates the active_decade variable
+  director.groups <- group_by(votes, selectionDirector)
+  votesbyDirector <- summarise(director.groups,
+                               Active_Decade = median(decade),
+                               Totals = n())
+#subsets the data, leaving only the top specified percentile
+  votesbyDirector.Top <- 
+    subset(votesbyDirector, 
+           Totals >= quantile(Totals, percentile))
+#converts active_decade to factor for future use
+  votesbyDirector.Top$Active_Decade<-
+    as.factor(votesbyDirector.Top$Active_Decade)
+#returns a dataframe of the results
+  return(data.frame(votesbyDirector.Top)) 
+} 
+```
+
+I then applied it to France.
+
+```{r director_vote_distribution_France, echo=FALSE, cache=TRUE, cache.path = 'cache/', fig.path='figure/', message=FALSE, warning=FALSE}
+France.directors <- 
+  top.directors.countries(critic_data, "France", 0.85) #An application of the new function defined above
+ggplot(aes(x=reorder(selectionDirector,-Totals), 
+           y=Totals, 
+           color=Active_Decade, 
+           fill=Active_Decade), 
+       data=France.directors) +
+  geom_point(size=5)+ 
+  geom_bar(stat="identity", width=0.1) +
+  ggtitle("Distribution of French Votes by Director")+
+  xlab("Directors")+
+  ylab("Number of Votes")+
+  scale_color_brewer(palette = "Paired")+
+  scale_fill_brewer(palette = "Paired")+
+  coord_flip()
+```
+
+Compared to many of the other countries, French voters seem to have voted for directors from a wide range of decades. 
+
+To be fair to the UK, I decided to include them in the fun.
+
+```{r director_vote_distribution_UK, echo=FALSE, cache=TRUE, cache.path = 'cache/', fig.path='figure/', message=FALSE, warning=FALSE}
+UK.directors <- 
+  top.directors.countries(critic_data, "UK", 0.95)
+ggplot(aes(x=reorder(selectionDirector,-Totals), 
+           y=Totals, 
+           color=Active_Decade, 
+           fill=Active_Decade), 
+       data=UK.directors) +
+  geom_point(size=5)+ 
+  geom_bar(stat="identity", width=0.1) +
+  ggtitle("Distribution of UK Votes by Director")+
+  xlab("Directors")+
+  ylab("Number of Votes")+
+  scale_color_brewer(palette = "Paired")+
+  scale_fill_brewer(palette = "Paired")+
+  coord_flip()
+```
+
+Most notable for voters in the UK is the high ranking of Powell and Pressburger, a famous British directing duo famous for classic movies like The Red Shoes and Black Narcissus.
+
+At this point I decided to round out the top five voting countries.
+
+```{r director_vote_distribution_US, echo=FALSE, cache=TRUE, cache.path = 'cache/', fig.path='figure/', message=FALSE, warning=FALSE}
+US.directors <- 
+  top.directors.countries(critic_data, "US", 0.93)
+ggplot(aes(x=reorder(selectionDirector,-Totals), 
+           y=Totals, 
+           color=Active_Decade, 
+           fill=Active_Decade), 
+       data=US.directors) +
+  geom_point(size=5)+ 
+  geom_bar(stat="identity", width=0.1) +
+  ggtitle("Distribution of US Votes by Director")+
+  xlab("Directors")+
+  ylab("Number of Votes")+
+  scale_color_brewer(palette = "Paired")+
+  scale_fill_brewer(palette = "Paired")+
+  coord_flip()
+```
+```{r director_vote_distribution_Germany, echo=FALSE, cache=TRUE, cache.path = 'cache/', fig.path='figure/', message=FALSE, warning=FALSE}
+Germany.directors <- 
+  top.directors.countries(critic_data, "Germany", 0.85)
+ggplot(aes(x=reorder(selectionDirector,-Totals), 
+           y=Totals, 
+           color=Active_Decade, 
+           fill=Active_Decade), 
+       data=Germany.directors) +
+  geom_point(size=5)+ 
+  geom_bar(stat="identity", width=0.1) +
+  ggtitle("Distribution of German Votes by Director")+
+  xlab("Directors")+
+  ylab("Number of Votes")+
+  scale_color_brewer(palette = "Paired")+
+  scale_fill_brewer(palette = "Paired")+
+  coord_flip()
+```
+
+###Stability of Director Rankings Across Countries
+
+At this point, as I stated at the start of this section, I would like to see how stable these rankings are between countries.
+
+I first reagreggated the data by Director and the country of the voter who voted for that director. This creates a dataset with the total number of votes for each director from each country.
+
+```{r  message=FALSE, warning=FALSE}
+director.country.groups <- 
+  group_by(critic_data, selectionDirector, country)
+#Aggregates votes for directors by country in the data frame votes.by.director.country in the variable Totals
+votes.by.director.country <- 
+  summarise(director.country.groups,
+            Totals = n())
+```
+
+Since each country has a different number of votes, I had to find a way to normalize the votes across countries. I could have converted the votes that each director received into a share of votes, but I decided that ranking the directors within the country might serve me better. I would lose the relative magnitude of the votes by doing this, but I would gain some clarity.
+
+I ranked the directors in each country, and then decided that I wanted to only look at directors in the top 1 percentile of the overall vote. I accomplished this with the code below. 
+
+```{r  message=FALSE, warning=FALSE}
+#Adds a column, director.rank, that ranks directors from most to least number of votes by country
+votes.by.director.country <- 
+  transform(votes.by.director.country, 
+            director.rank = ave(Totals, country, 
+                                FUN = function(x) rank(-x, ties.method = "first"))) #Applies the rank function by country on the data in column Totals
+
+#creates a subset of the top percentile of directors by vote count in dataframe top.1.perc.director
+top.1.perc.director <- 
+  subset(votesbyDirector, Totals >= quantile(Totals,0.99))
+#converts the column of directors in top.1.perc.director into a vector called directors
+directors <- 
+  top.1.perc.director[['selectionDirector']]
+#creates a boolean vector with TRUE representing all directors in the list directors
+keep <- 
+  apply(votes.by.director.country,1,function(x) any(x %in% directors))
+#uses the boolean vector to subset the data, keeping only True values
+top.votes.by.director.country <- 
+  votes.by.director.country[keep,]
+#converts selectionDirector into a factor for future use
+top.votes.by.director.country$selectionDirector <- 
+  as.factor(top.votes.by.director.country$selectionDirector) 
+```
+
+I first tried plotting the ranks of all directors against the critics of all countries. The results are obviously completely unreadable.
+
+```{r ranks, echo=FALSE, cache=TRUE, cache.path = 'cache/', fig.path='figure/', message=FALSE, warning=FALSE}
+ggplot(aes(x=country, 
+           y=director.rank, 
+           color=selectionDirector, 
+           group=1),
+       data=top.votes.by.director.country) +
+  geom_line()
+```
+
+I next decided to flip the graph and focus only on the number one director: Alfred Hitchcock. I reordered the countries by Hitchcock's rankings so that I would be able to see a trend.
+
+```{r ranks_hitchcock, echo=FALSE, cache=TRUE, cache.path = 'cache/', fig.path='figure/', message=FALSE, warning=FALSE}
+#So I thought I might look director by director starting at the top
+ggplot(aes(x=reorder(country, director.rank), 
+           y=director.rank, 
+           group=1), #This line groups all points together to allow geom_line to recognize that all the points need to be joined together
+       data=subset(top.votes.by.director.country,
+                   selectionDirector == "Alfred Hitchcock")) + #Takes just votes with the vote "Alfred Hitchcock"
+         geom_line() + 
+         coord_flip() +  
+  ggtitle("Rankings of Alfred Hitchcock across countries")+
+  xlab("Ranking") +
+  ylab("Country")
+```
+
+We can see that there is a fairly wide variance in the ranking of Hitchcock with him being ranked first in many countries, but also being ranked 15th in Japan and even lower in China. Still, It looks like around half of countries would place him in the top 5. 
+
+I thought it would be interesting to get a similar snapshot of other directors.
+
+```{r ranks_top_directors, echo=FALSE, cache=TRUE, cache.path = 'cache/', fig.path='figure/', message=FALSE, warning=FALSE}
+ggplot(aes(x=reorder(country, director.rank), 
+           y=director.rank, 
+           group=1),  #This line groups all points together to allow geom_line to recognize that all the points need to be joined together
+       data=top.votes.by.director.country) +
+  geom_line(color='black') +
+  coord_flip() +
+  facet_wrap(~selectionDirector) + #facet by director
+  theme(axis.text.x=element_blank())+ #Remove x axis text (y axis after flip)
+  scale_x_discrete(breaks=NULL) +
+  xlab("Director Rank") +
+  ylab("Country")+
+  ggtitle("Relative rankings of top directors across countries")
+```
+
+I can see here that some directors have much more variability than others. In fact, Alfred Hitchcock appears to have much lower amounts of variation than other directors.
+
+As I looked at this data, it occured to me that one significant problem with countries with a smaller number of votes might be that individual reviews' preferences might have an undue influence. In particular, if one voter in a ten person sample has quirky tastes, that will be much more prevalent in the national aggregate than if one voter in 500 has quirky tastes. Put another way, more voters would more accurately reflect national tastes, and at some point, too small a number of voters might not reflect national tastes at all. To this end, I decided to perform this analysis again with only the top 10 countries with the most voters.
+
+I used the code below to subset the data.
+
+```{r  message=FALSE, warning=FALSE}
+#creates a data set with only the names of the top countries with name top_10_countries
+top_10_countries <- 
+  subset(votersbyCountry, Totals >= 
+           quantile(Totals,0.935))[['country']]
+#finds the countries in the list created above in the top.votes.by.director.country and creates an boolean array called keep indicating which cells to keep
+keep <- 
+  apply(top.votes.by.director.country,1,
+        function(x) any(x %in% top_10_countries))
+#applies the boolean array to top.votes.by.director.country to keep only the TRUE values
+top.votes.by.director.country <- 
+  top.votes.by.director.country[keep,]
+```
+
+I then repeated the previous plot with the smaller number of countries.
+
+I was hoping to get them all onto a single line chart, but the results were not good.
+
+```{r ranks_top_directors_single, echo=FALSE, cache=TRUE, cache.path = 'cache/', fig.path='figure/', message=FALSE, warning=FALSE}
+ggplot(aes(country, director.rank, 
+           group = selectionDirector, 
+           color=selectionDirector), 
+       data=top.votes.by.director.country)+
+  geom_line()+
+  coord_cartesian(ylim = c(0,40)) #limits y axis to the range 0 to 40
+```
+
+Instead I tried a faceted graph.
+
+```{r ranks_top_directors_faceted, echo=FALSE, cache=TRUE, cache.path = 'cache/', fig.path='figure/', message=FALSE, warning=FALSE}
+ggplot(aes(x=reorder(country, director.rank), 
+           y=director.rank, 
+           group=1,
+           color=country), 
+       data=top.votes.by.director.country) +
+  geom_line(color='black') + 
+  geom_point(size=5) +
+  coord_flip() +
+  facet_wrap(~selectionDirector) + #facet by director
+  xlab("Director Rank") +
+  ylab("Country")+
+  ggtitle("Relative rankings of top directors across countries")
+```
+
+I found it very difficult to see how each point matched up to its country and so I added some stripes to the background.
+
+```{r ranks_top_directors_rectangles, echo=FALSE, cache=TRUE, cache.path = 'cache/', fig.path='figure/', message=FALSE, warning=FALSE}
+#creates a dataframe "rects" with the cutoffs for the different colors in the background of the chart
+rects <- 
+  data.frame(xstart = seq(0.5,9.5,1), 
+             xend = seq(1.5,10.5,1), 
+             col = c("US","UK","Sweden","Spain",
+                     "Italy","Germany","France",
+                     "Canada","Australia","Argentina"))
+
+ggplot() +
+  geom_point(data=top.votes.by.director.country, 
+             aes(x=country, 
+                 y=director.rank, 
+                 group=1)) +
+  geom_line(data=top.votes.by.director.country, 
+            color='black', 
+            aes(x=country, 
+                y=director.rank, 
+                group=1)) +
+  #This line draws a series of rectangles on the plot to create the striped background.
+  #It applies the dataframe rects defined earlier to tell geom_rect the boundaries of the
+  #rectangles
+  #Since the rectangles are in front of the points, alpha is set to 0.5 to allow for 
+  #the points to show through.
+  geom_rect(data=rects,
+            aes(ymin=0,
+                ymax=80,
+                xmin=xstart,
+                xmax=xend,
+                fill=col), 
+            alpha=0.5) +
+  coord_flip() +
+  facet_wrap(~selectionDirector) +
+  theme(legend.position="none") +
+  scale_fill_brewer(palette = "Set3") +
+  ggtitle("Director Vote Rank Across Countries")+
+  xlab("Rank")+
+  ylab("Country")
+```
+
+
+There is a wealth of interesting information in this comparison. First and foremost, we can see that among this smaller set of countries, both Alfred Hitchcock and Jean-Luc Godard, overall ranked 1 and 2 respectively, have a very low level of variation between countries. At least in this set of voters, they seem to be widely considered to be great directors. Orson Welles, on the other hand, has a very significant amount of variation, but is very highly regarded in the US and UK which have a very high number of votes. In other cases, there are some directors that extremely low in a few countries. Ingmar Bergman ranks over 50th in Germany, Robert Bresson ranks 80th in Italy, and Stanly Kubrick ranks nearly 60th in Argentina. 
+
+There is also some evidence that voters from a given country favor directors from their country. Federico Fellini ranks highest in his Native Italy and Ingmar Bergman ranks first in his native Sweden. Jean Renoir, from France, is ranked highest in his home country.
+
+
+###Ideas on Future Analysis
+
+There are several directions that I would like to take the analysis of this data in the future. First, I would be interested in reweighting this data so that I might see a ranking that is more reflective of international tastes. For example, I could imagine converting votes in each country into shares of the total vote. Aggregating this data would equally weight voters from all countries. Alternately, it might be interesting to weight by country population to get a very rough proxy of global film tastes.
+
+With the directors, I would also be interested in finding out how important individual directors are in the film culture of a given country. More specifically, I would be interested in seeing whether individual countries' film cultures defined by a large group of people or by a handful of auteurs? For example, of all of the votes that went to Japanese directors, what percentage went to Akira Kurosawa? I suspect that there are a few highly influential directors and a long tail of directors that receive a vote or two.
+
+I would also be interested in performing a country by country analysis of the popularity of individual movies. These analyses would be a more fine grained version of the analyses conducted at the director level.
+
+Finally, it would be interesting to look at the popularity of genres. The dataset includes data on the genre of each movie. It would be fascinating to see how different genres fare in different decades and in different countries. Were the 1950s a golden age for comedies in Germany? This data might help to answer such questions. 
