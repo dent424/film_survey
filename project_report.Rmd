@@ -14,24 +14,26 @@ When *Sight and Sound* published its most recent poll in 2012, it also created a
 #The Data
 The first step in this process was data collection. Since the data was not available in a readily downloadable or analyzable format, I created scripts which screen scraped and then formatted the data from the BFI website. In addition, I wanted more data on each of the selected movies. I turned to [The Open Movie Database API] (http://www.omdbapi.com/) in order to supplement the data provided by the BFI.
 
-Below I have documented the data provided by the BFI and the corresponding column in the dataset.
+
 
 ###BFI Data
-fName: Voter First Name
-lName: Voter Last Name 
-country: Voter country of origin
-poll: Whether their vote is counted in the critics poll or the directors poll
-selectionName: Name of movie voted for
-selectionYear: Year of movie voted for
+Below I have documented the data provided by the BFI and the corresponding column in the dataset.
 
-Next, I have documented the data provided by The Open Movie Database API (OMDBAPI) and the corresponding column in the dataset
+fName - Voter First Name  
+lName: Voter Last Name  
+country: Voter country of origin  
+poll: Whether their vote is counted in the critics poll or the directors poll  
+selectionName: Name of movie voted for  
+selectionYear: Year of movie voted for  
 
 ###OMDBAPI Data
-newName: Name of movie voted for in the OMDBAPI
-rating: The rating of the movie
-genre: The genre or genres of the movie
-language: The language or languages used in the movie
-country.1: The country or countries involved with the movie
+Next, I have documented the data provided by The Open Movie Database API (OMDBAPI) and the corresponding column in the dataset
+
+newName: Name of movie voted for in the OMDBAPI  
+rating: The rating of the movie  
+genre: The genre or genres of the movie  
+language: The language or languages used in the movie  
+country.1: The country or countries involved with the movie  
 
 Since the variables genre, language, and country often included multiple values per movie, these were converted into dummy variables with Python.
 

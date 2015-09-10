@@ -82,15 +82,15 @@ img {
 <div id="the-data" class="section level1">
 <h1>The Data</h1>
 <p>The first step in this process was data collection. Since the data was not available in a readily downloadable or analyzable format, I created scripts which screen scraped and then formatted the data from the BFI website. In addition, I wanted more data on each of the selected movies. I turned to [The Open Movie Database API] (<a href="http://www.omdbapi.com/" class="uri">http://www.omdbapi.com/</a>) in order to supplement the data provided by the BFI.</p>
-<p>Below I have documented the data provided by the BFI and the corresponding column in the dataset.</p>
 <div id="bfi-data" class="section level3">
 <h3>BFI Data</h3>
-<p>fName: Voter First Name lName: Voter Last Name country: Voter country of origin poll: Whether their vote is counted in the critics poll or the directors poll selectionName: Name of movie voted for selectionYear: Year of movie voted for</p>
-<p>Next, I have documented the data provided by The Open Movie Database API (OMDBAPI) and the corresponding column in the dataset</p>
+<p>Below I have documented the data provided by the BFI and the corresponding column in the dataset.</p>
+<p>fName - Voter First Name<br />lName: Voter Last Name<br />country: Voter country of origin<br />poll: Whether their vote is counted in the critics poll or the directors poll<br />selectionName: Name of movie voted for<br />selectionYear: Year of movie voted for</p>
 </div>
 <div id="omdbapi-data" class="section level3">
 <h3>OMDBAPI Data</h3>
-<p>newName: Name of movie voted for in the OMDBAPI rating: The rating of the movie genre: The genre or genres of the movie language: The language or languages used in the movie country.1: The country or countries involved with the movie</p>
+<p>Next, I have documented the data provided by The Open Movie Database API (OMDBAPI) and the corresponding column in the dataset</p>
+<p>newName: Name of movie voted for in the OMDBAPI<br />rating: The rating of the movie<br />genre: The genre or genres of the movie<br />language: The language or languages used in the movie<br />country.1: The country or countries involved with the movie</p>
 <p>Since the variables genre, language, and country often included multiple values per movie, these were converted into dummy variables with Python.</p>
 </div>
 <div id="generated-dummy-variables" class="section level3">
